@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PzPass — local-first password vault</title>
+<meta name="description" content="PzPass is a minimal, zero-dependency password generator and encrypted secret vault written in Zig. Argon2id + ChaCha20-Poly1305, local-first, no cloud.">
+<meta property="og:title" content="PzPass">
+<meta property="og:description" content="Minimal, zero-dependency encrypted secret vault and password generator written in Zig.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pzpass.github.io/">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#top" aria-label="PzPass home">
+      <img src="favicon.svg" alt="" width="22" height="22">
+      <span>pzpass</span>
+    </a>
+    <nav>
+      <a href="#install">Install</a>
+      <a href="#usage">Usage</a>
+      <a href="#security">Security</a>
+      <a href="https://github.com/pzpass/pzpass" class="gh">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="eyebrow">Zig · MIT · <span data-latest-tag>v1.0.1</span></p>
+      <h1>Your secrets, in one encrypted file, on your machine.</h1>
+      <p class="lede">
+        PzPass is a minimal password generator and encrypted secret vault.
+        One small binary, no dependencies, no cloud, no hidden behavior —
+        just Argon2id and ChaCha20-Poly1305 from Zig's standard library.
+      </p>
+      <div class="cmd" data-copy="brew install meslab/tap/pzpass">
+        <code><span class="prompt">$</span> brew install meslab/tap/pzpass</code>
+        <button type="button" class="copy" aria-label="Copy command">Copy</button>
+      </div>
+      <p class="hero-links">
+        <a href="#install">Other install options →</a>
+        <a href="https://github.com/pzpass/pzpass/releases">Releases →</a>
+      </p>
+    </div>
+
+    <div class="term" aria-label="Example terminal session">
+      <div class="term-bar"><i></i><i></i><i></i><span>pzp</span></div>
+<pre><span class="prompt">$</span> pzp pass 24
+<span class="out">q7#Vt!mR2@xLp9&amp;Kd$Wz4^Nf</span>
+
+<span class="prompt">$</span> pzp dice 5
+<span class="out">ember-quarry-tonic-salvo-ripple</span>
+
+<span class="prompt">$</span> pzp
+<span class="dim">Master password:</span> <span class="dim">••••••••••••</span>
+<span class="out">Vault ~/.pzpass/alice.vault.dat — 12 entries</span>
+<span class="dim">[a]dd [g]en [e]dit [d]el [l]ist [f]ind [o]pen [q]uit</span>
+<span class="prompt">&gt;</span> <span class="cursor"></span></pre>
+    </div>
+  </section>
+
+  <section class="features wrap" aria-label="Features">
+    <article>
+      <h3>Encrypted vault</h3>
+      <p>Every entry name and value is sealed with ChaCha20-Poly1305 under a random vault key.</p>
+    </article>
+    <article>
+      <h3>Memory-hard KDF</h3>
+      <p>Your master password goes through Argon2id (256&nbsp;MiB, t=5) before it touches anything.</p>
+    </article>
+    <article>
+      <h3>Interactive TUI</h3>
+      <p>Add, view, edit, delete and search entries from a single-key terminal interface.</p>
+    </article>
+    <article>
+      <h3>Generators built in</h3>
+      <p>Random passwords and diceware passphrases from a 10,399-word list compiled into the binary.</p>
+    </article>
+    <article>
+      <h3>Zero dependencies</h3>
+      <p>Pure Zig, crypto from <code>std.crypto</code>. ~2,200 lines you can actually read.</p>
+    </article>
+    <article>
+      <h3>Local-first</h3>
+      <p>One file under <code>~/.pzpass/</code>. Back it up, sync it, or don't — your call.</p>
+    </article>
+  </section>
+
+  <section id="how" class="wrap split">
+    <div>
+      <h2>How it works</h2>
+      <p>
+        The only secret you remember is your master password. It's stretched
+        into a key-encryption key, which unwraps the vault key, which decrypts
+        entries one at a time — only the entry you open is ever in plaintext.
+      </p>
+      <ul class="plain">
+        <li>Changing the password rotates the vault key and re-encrypts every entry.</li>
+        <li>Entry and vault IDs are bound in as AEAD associated data, so ciphertexts can't be swapped between entries or fields.</li>
+        <li>An HMAC-SHA256 over the whole file detects deleted, reordered or duplicated entries.</li>
+        <li>Writes are atomic: <code>.tmp</code> → rename → <code>.bak</code>.</li>
+      </ul>
+    </div>
+    <ol class="chain" aria-label="Key hierarchy">
+      <li><b>Master password</b><span>only thing you remember</span></li>
+      <li class="op">Argon2id · salt from header</li>
+      <li><b>KEK</b><span>key-encryption key</span></li>
+      <li class="op">ChaCha20-Poly1305 unwrap</li>
+      <li><b>Vault key</b><span>random, never stored in plaintext</span></li>
+      <li class="op">ChaCha20-Poly1305 · unique nonce per field</li>
+      <li><b>Entries</b><span>name &amp; value, decrypted on demand</span></li>
+    </ol>
+  </section>
+
+  <section id="install" class="wrap">
+    <h2>Install</h2>
+    <p>Prebuilt binaries for Linux x86_64, Linux arm64 and macOS arm64. The binary is called <code>pzp</code>.</p>
+
+    <div class="tabs" role="tablist" aria-label="Install method">
+      <button role="tab" aria-selected="true" aria-controls="tab-brew" id="t-brew">Homebrew</button>
+      <button role="tab" aria-selected="false" aria-controls="tab-dl" id="t-dl" tabindex="-1">Direct download</button>
+      <button role="tab" aria-selected="false" aria-controls="tab-src" id="t-src" tabindex="-1">From source</button>
+    </div>
+
+    <div class="panel" role="tabpanel" id="tab-brew" aria-labelledby="t-brew">
+      <div class="code" data-copy>
+<pre><code>brew install meslab/tap/pzpass</code></pre>
+        <button type="button" class="copy" aria-label="Copy">Copy</button>
+      </div>
+      <p class="note">Works on macOS and Linux.</p>
+    </div>
+
+    <div class="panel" role="tabpanel" id="tab-dl" aria-labelledby="t-dl" hidden>
+      <div class="code" data-copy>
+<pre><code>TAG=<span data-latest-tag>v1.0.1</span>
+TARGET=aarch64-macos  # or x86_64-linux, aarch64-linux
+curl -fLO "https://github.com/pzpass/pzpass/releases/download/$TAG/pzp-$TAG-$TARGET.tar.gz"
+curl -fLO "https://github.com/pzpass/pzpass/releases/download/$TAG/pzp-$TAG-$TARGET.tar.gz.sha256"
+shasum -a 256 -c "pzp-$TAG-$TARGET.tar.gz.sha256"
+tar -xzf "pzp-$TAG-$TARGET.tar.gz"
+mkdir -p ~/.local/bin &amp;&amp; install -m 0755 "pzp-$TAG-$TARGET/pzp" ~/.local/bin/pzp</code></pre>
+        <button type="button" class="copy" aria-label="Copy">Copy</button>
+      </div>
+      <p class="note">
+        Downloaded with a browser on macOS? Clear the quarantine flag:
+        <code>xattr -d com.apple.quarantine ~/.local/bin/pzp</code>
+      </p>
+    </div>
+
+    <div class="panel" role="tabpanel" id="tab-src" aria-labelledby="t-src" hidden>
+      <div class="code" data-copy>
+<pre><code>git clone https://github.com/pzpass/pzpass.git
+cd pzpass
+zig build --release=small --prefix "$HOME/.local"</code></pre>
+        <button type="button" class="copy" aria-label="Copy">Copy</button>
+      </div>
+      <p class="note">Requires Zig 0.17.0 or later. Without <code>--prefix</code> the binary lands in <code>zig-out/bin/pzp</code>.</p>
+    </div>
+  </section>
+
+  <section id="usage" class="wrap split">
+    <div>
+      <h2>Usage</h2>
+      <dl class="usage">
+        <dt><code>pzp</code></dt>
+        <dd>Open the interactive vault at <code>~/.pzpass/&lt;USER&gt;.vault.dat</code>.</dd>
+        <dt><code>pzp -f &lt;file&gt;</code></dt>
+        <dd>Open a vault at a custom path.</dd>
+        <dt><code>pzp pass [length]</code></dt>
+        <dd>Generate a random password. Default length 20.</dd>
+        <dt><code>pzp dice [words]</code></dt>
+        <dd>Generate a diceware passphrase. Default 5 words; any key for another, <kbd>q</kbd> to stop.</dd>
+      </dl>
+    </div>
+    <div>
+      <h3 class="table-title">Vault key bindings</h3>
+      <table class="keys">
+        <tbody>
+          <tr><td><kbd>a</kbd></td><td>Add an entry</td><td><kbd>o</kbd></td><td>Open / view</td></tr>
+          <tr><td><kbd>g</kbd></td><td>Generate entry</td><td><kbd>i</kbd></td><td>Vault info</td></tr>
+          <tr><td><kbd>e</kbd></td><td>Edit</td><td><kbd>s</kbd></td><td>Save</td></tr>
+          <tr><td><kbd>d</kbd></td><td>Delete</td><td><kbd>u</kbd></td><td>Change password</td></tr>
+          <tr><td><kbd>l</kbd></td><td>List</td><td><kbd>h</kbd></td><td>Help</td></tr>
+          <tr><td><kbd>f</kbd></td><td>Find by name</td><td><kbd>q</kbd></td><td>Quit</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="security" class="wrap">
+    <h2>Security notes</h2>
+    <div class="sec-grid">
+      <ul class="checks">
+        <li>Passwords and the vault key are never stored in plaintext.</li>
+        <li>All secrets are encrypted at rest with ChaCha20-Poly1305.</li>
+        <li>Key derivation uses Argon2id; parameters are stored per vault so they can be upgraded.</li>
+        <li>Sensitive buffers are <code>mlock</code>ed, then zeroed and unlocked when done.</li>
+        <li>Revealed records are wiped from memory; terminal echo is off for every password prompt.</li>
+        <li>Entries are capped at 16&nbsp;MiB to bound memory use on hostile input.</li>
+        <li>CI audits the source for unsafe patterns on every change.</li>
+      </ul>
+      <aside class="caveat">
+        <h3>Known limit</h3>
+        <p>
+          Rolling the vault file back to an older, intact copy is not detected.
+          If that's in your threat model, keep the vault somewhere you control
+          the history of.
+        </p>
+        <p><a href="https://github.com/pzpass/pzpass/blob/main/OVERVIEW.md">Read the full design →</a></p>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="wrap footer">
+  <p>
+    PzPass is MIT-licensed. © 2026 Anton Sidorov.
+    <a href="https://github.com/pzpass/pzpass">Source</a> ·
+    <a href="https://github.com/pzpass/pzpass/issues">Issues</a> ·
+    <a href="https://github.com/pzpass/pzpass/releases">Releases</a>
+  </p>
+</footer>
+
+<script src="site.js" defer></script>
+</body>
+</html>
